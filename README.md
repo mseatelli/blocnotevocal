@@ -269,6 +269,8 @@ Procédures de déploiement
 9.2 Utilisateur
 Application publiée sur Play Store
 
+Suppression de message ajoutée
+
 Guide d'utilisation
 
 Page d'assistance
