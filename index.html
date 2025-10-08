@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bloc-Notes Vocal</title>
+    <meta name="theme-color" content="#6750A4">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #6750A4;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .search-bar {
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-bar input:focus {
+            border-color: #6750A4;
+        }
+
+        .recorder-section {
+            padding: 20px;
+            text-align: center;
+            background: #f8f9fa;
+        }
+
+        .record-btn {
+            background: #6750A4;
+            color: white;
+            border: none;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(103, 80, 164, 0.3);
+        }
+
+        .record-btn.recording {
+            background: #ff3b30;
+            transform: scale(1.1);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 59, 48, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
+        }
+
+        .audio-level {
+            width: 100px;
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            margin: 15px auto;
+            overflow: hidden;
+        }
+
+        .audio-level-bar {
+            height: 100%;
+            background: #6750A4;
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        .transcript-preview {
+            background: white;
+            border: 2px solid #6750A4;
+            border-radius: 15px;
+            padding: 15px;
+            margin: 15px 0;
+            min-height: 80px;
+            text-align: left;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-primary {
+            background: #6750A4;
+            color: white;
+        }
+
+        .notes-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .note-item {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .note-item:hover {
+            background: #f8f9fa;
+        }
+
+        .note-header {
+            display: flex;
+            justify-content: between;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+
+        .note-date {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .note-tags {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            margin: 8px 0;
+        }
+
+        .tag {
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+
+        .no-notes {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            margin: 50px auto;
+            padding: 20px;
+            border-radius: 15px;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎤 Bloc-Notes Vocal</h1>
+            <p>Parlez, il transcrit immédiatement</p>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="🔍 Rechercher dans les notes...">
+        </div>
+
+        <div class="recorder-section">
+            <button class="record-btn" id="recordBtn">
+                <span class="material-symbols-outlined">mic</span>
+            </button>
+            
+            <div class="audio-level">
+                <div class="audio-level-bar" id="audioLevel"></div>
+            </div>
+
+            <div class="transcript-preview" id="transcriptPreview">
+                <em>Appuyez sur le microphone pour commencer...</em>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-secondary" id="retryBtn" style="display: none;">
+                    <span class="material-symbols-outlined">replay</span> Recommencer
+                </button>
+                <button class="btn btn-primary" id="saveBtn" style="display: none;">
+                    <span class="material-symbols-outlined">save</span> Sauvegarder
+                </button>
+            </div>
+        </div>
+
+        <div class="notes-list" id="notesList">
+            <!-- Les notes seront ajoutées ici dynamiquement -->
+        </div>
+    </div>
+
+    <!-- Modal pour l'édition -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <h3>Éditer la note</h3>
+            <textarea id="editText" style="width: 100%; height: 150px; margin: 15px 0; padding: 10px; border: 1px solid #ddd; border-radius: 8px;"></textarea>
+            <input type="text" id="editTags" placeholder="Tags (séparés par des virgules)" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="closeEditModal()">Annuler</button>
+                <button class="btn btn-primary" onclick="saveEditedNote()">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class VoiceNotesApp {
+            constructor() {
+                this.notes = JSON.parse(localStorage.getItem('voiceNotes')) || [];
+                this.isRecording = false;
+                this.currentTranscript = '';
+                this.recognition = null;
+                this.currentEditingId = null;
+                
+                this.init();
+            }
+
+            init() {
+                this.initSpeechRecognition();
+                this.bindEvents();
+                this.renderNotes();
+            }
+
+            initSpeechRecognition() {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                
+                if (!SpeechRecognition) {
+                    alert('La reconnaissance vocale n\'est pas supportée sur ce navigateur.');
+                    return;
+                }
+
+                this.recognition = new SpeechRecognition();
+                this.recognition.continuous = true;
+                this.recognition.interimResults = true;
+                this.recognition.lang = 'fr-FR';
+
+                this.recognition.onstart = () => {
+                    this.isRecording = true;
+                    this.updateUI();
+                };
+
+                this.recognition.onresult = (event) => {
+                    let interimTranscript = '';
+                    let finalTranscript = '';
+
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript;
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+
+                    this.currentTranscript = finalTranscript || interimTranscript;
+                    this.updateTranscriptPreview();
+                    this.simulateAudioLevel();
+                };
+
+                this.recognition.onerror = (event) => {
+                    console.error('Erreur reconnaissance:', event.error);
+                    this.stopRecording();
+                };
+
+                this.recognition.onend = () => {
+                    this.stopRecording();
+                };
+            }
+
+            bindEvents() {
+                document.getElementById('recordBtn').addEventListener('click', () => {
+                    this.toggleRecording();
+                });
+
+                document.getElementById('retryBtn').addEventListener('click', () => {
+                    this.retryRecording();
+                });
+
+                document.getElementById('saveBtn').addEventListener('click', () => {
+                    this.saveNote();
+                });
+
+                document.getElementById('searchInput').addEventListener('input', (e) => {
+                    this.searchNotes(e.target.value);
+                });
+            }
+
+            toggleRecording() {
+                if (this.isRecording) {
+                    this.stopRecording();
+                } else {
+                    this.startRecording();
+                }
+            }
+
+            startRecording() {
+                this.currentTranscript = '';
+                this.recognition.start();
+            }
+
+            stopRecording() {
+                this.isRecording = false;
+                this.recognition.stop();
+                this.updateUI();
+            }
+
+            retryRecording() {
+                this.currentTranscript = '';
+                this.updateTranscriptPreview();
+                this.startRecording();
+            }
+
+            saveNote() {
+                if (!this.currentTranscript.trim()) return;
+
+                const note = {
+                    id: Date.now(),
+                    text: this.currentTranscript,
+                    tags: this.extractTags(this.currentTranscript),
+                    timestamp: new Date().toLocaleString('fr-FR'),
+                    date: new Date().toISOString()
+                };
+
+                this.notes.unshift(note);
+                this.saveToLocalStorage();
+                this.renderNotes();
+                
+                this.currentTranscript = '';
+                this.updateTranscriptPreview();
+                
+                // Feedback visuel
+                this.showSaveFeedback();
+            }
+
+            extractTags(text) {
+                const tagMatches = text.match(/#\w+/g);
+                return tagMatches ? tagMatches.map(tag => tag.substring(1)) : [];
+            }
+
+            showSaveFeedback() {
+                const btn = document.getElementById('saveBtn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<span class="material-symbols-outlined">check</span> Sauvegardé !';
+                btn.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            }
+
+            updateUI() {
+                const recordBtn = document.getElementById('recordBtn');
+                const retryBtn = document.getElementById('retryBtn');
+                const saveBtn = document.getElementById('saveBtn');
+                const preview = document.getElementById('transcriptPreview');
+
+                if (this.isRecording) {
+                    recordBtn.classList.add('recording');
+                    recordBtn.innerHTML = '<span class="material-symbols-outlined">stop</span>';
+                    retryBtn.style.display = 'inline-block';
+                    saveBtn.style.display = 'none';
+                } else {
+                    recordBtn.classList.remove('recording');
+                    recordBtn.innerHTML = '<span class="material-symbols-outlined">mic</span>';
+                    retryBtn.style.display = this.currentTranscript ? 'inline-block' : 'none';
+                    saveBtn.style.display = this.currentTranscript ? 'inline-block' : 'none';
+                }
+            }
+
+            updateTranscriptPreview() {
+                const preview = document.getElementById('transcriptPreview');
+                preview.innerHTML = this.currentTranscript || '<em>Appuyez sur le microphone pour commencer...</em>';
+                preview.style.color = this.currentTranscript ? '#333' : '#6c757d';
+            }
+
+            simulateAudioLevel() {
+                if (!this.isRecording) return;
+                
+                const level = document.getElementById('audioLevel');
+                const randomLevel = Math.random() * 100;
+                level.style.width = randomLevel + '%';
+                
+                setTimeout(() => this.simulateAudioLevel(), 100);
+            }
+
+            renderNotes(filteredNotes = null) {
+                const notesList = document.getElementById('notesList');
+                const notesToRender = filteredNotes || this.notes;
+
+                if (notesToRender.length === 0) {
+                    notesList.innerHTML = `
+                        <div class="no-notes">
+                            <span class="material-symbols-outlined" style="font-size: 48px; margin-bottom: 15px;">notes</span>
+                            <p>Aucune note enregistrée</p>
+                            <p style="font-size: 14px; margin-top: 10px;">Utilisez le microphone pour créer votre première note !</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                notesList.innerHTML = notesToRender.map(note => `
+                    <div class="note-item" onclick="app.editNote(${note.id})">
+                        <div class="note-header">
+                            <div class="note-date">${note.timestamp}</div>
+                        </div>
+                        <div class="note-text">${this.escapeHtml(note.text)}</div>
+                        ${note.tags.length > 0 ? `
+                            <div class="note-tags">
+                                ${note.tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            searchNotes(query) {
+                if (!query.trim()) {
+                    this.renderNotes();
+                    return;
+                }
+
+                const filteredNotes = this.notes.filter(note => 
+                    note.text.toLowerCase().includes(query.toLowerCase()) ||
+                    note.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
+                );
+                
+                this.renderNotes(filteredNotes);
+            }
+
+            editNote(id) {
+                const note = this.notes.find(n => n.id === id);
+                if (!note) return;
+
+                this.currentEditingId = id;
+                document.getElementById('editText').value = note.text;
+                document.getElementById('editTags').value = note.tags.join(', ');
+                document.getElementById('editModal').style.display = 'block';
+            }
+
+            saveEditedNote() {
+                const newText = document.getElementById('editText').value;
+                const newTags = document.getElementById('editTags').value.split(',').map(tag => tag.trim()).filter(tag => tag);
+
+                const noteIndex = this.notes.findIndex(n => n.id === this.currentEditingId);
+                if (noteIndex !== -1) {
+                    this.notes[noteIndex].text = newText;
+                    this.notes[noteIndex].tags = newTags;
+                    this.saveToLocalStorage();
+                    this.renderNotes();
+                }
+
+                this.closeEditModal();
+            }
+
+            closeEditModal() {
+                document.getElementById('editModal').style.display = 'none';
+                this.currentEditingId = null;
+            }
+
+            saveToLocalStorage() {
+                localStorage.setItem('voiceNotes', JSON.stringify(this.notes));
+            }
+
+            exportNotes() {
+                const dataStr = JSON.stringify(this.notes, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `notes-vocales-${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+            }
+        }
+
+        // Initialisation de l'app
+        const app = new VoiceNotesApp();
+
+        // Fonctions globales pour les événements
+        function closeEditModal() {
+            app.closeEditModal();
+        }
+
+        function saveEditedNote() {
+            app.saveEditedNote();
+        }
+
+        // Gestion PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(console.error);
+        }
+    </script>
+</body>
+</html>
